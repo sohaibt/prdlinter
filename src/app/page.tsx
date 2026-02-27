@@ -135,9 +135,9 @@ export default function Home() {
                 className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                 disabled={loading}
               >
-                <option value="anthropic">Claude (Anthropic)</option>
-                <option value="openai">GPT-4o (OpenAI)</option>
-                <option value="gemini">Gemini 1.5 Pro (Google)</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="openai">OpenAI</option>
+                <option value="gemini">Google Gemini</option>
               </select>
             </div>
           </div>

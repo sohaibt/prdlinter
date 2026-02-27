@@ -2,11 +2,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**AI-powered analysis of Product Requirement Documents.** PRD Linter scans your PRDs for common PM anti-patterns — missing success metrics, vague personas, unclear scope, unhandled edge cases, and weak acceptance criteria — and gives you a concrete score with actionable suggestions.
+**AI-powered analysis of Product Requirement Documents.** PRD Linter scans your PRDs through the lens of 4 distinct reviewer personas — a senior PM, an engineering lead, an executive, and a PM coach — flagging anti-patterns, scoring across 5 dimensions, and giving you a ship/revise/reject recommendation with blunt, actionable feedback.
 
 Runs 100% locally. Your documents never leave your machine. No backend, no database, no deployment. Clone it, add an API key, and go.
 
-![Screenshot placeholder](screenshot.png)
+![PRD Linter Preview](https://raw.githubusercontent.com/sohaibt/prdlinter/refs/heads/main/PRD%20Linter%20Preview.png)
 
 ---
 
@@ -16,10 +16,13 @@ Good PRDs ship better products. But reviewing a PRD for completeness is tedious 
 
 ## Features
 
+- **4 reviewer personas** — Senior PM, Engineering Lead, Executive, and PM Coach, each with a distinct evaluation lens and tone
+- **Ship / Revise / Reject recommendation** — clear verdict with rationale, not just a score
 - **Multi-LLM support** — choose between Anthropic, OpenAI, or Google Gemini with configurable models
-- **5-dimension analysis** — scored rubric covering the most common PRD gaps
+- **5-dimension analysis** — scored rubric tailored to each persona's perspective
+- **Rewrite examples** — reviewers show you what stronger writing looks like
+- **PM Coach growth focus** — diagnoses your #1 PM skill gap with a development plan
 - **PDF, Markdown & text upload** — paste text or upload .txt, .md, and .pdf files
-- **Actionable feedback** — specific issues and suggestions, not vague advice
 - **Markdown export** — copy the full report to clipboard as formatted Markdown
 - **Dark / light mode** — dark by default, toggle in the header
 - **Privacy-first** — all processing happens locally via API calls you control
@@ -34,7 +37,7 @@ Good PRDs ship better products. But reviewing a PRD for completeness is tedious 
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/prdlinter.git
+git clone https://github.com/sohaibt/prdlinter.git
 cd prdlinter
 
 # 2. Copy the example env file and add your API key(s)
@@ -79,31 +82,43 @@ GEMINI_MODEL=gemini-2.0-flash
 
 Use any model your API key has access to — the app passes it straight through to the provider SDK.
 
-## The 5 Dimensions
+## Reviewer Personas
 
-PRD Linter evaluates your document across five dimensions, each scored 0–10:
+Each persona evaluates your PRD through a completely different lens with its own 5 dimensions and tone.
 
-### 1. Success Metrics
-Does the PRD define clear, measurable success metrics? Are there KPIs, targets, and timelines?
+### Senior PM Review
 
-### 2. Persona Definition
-Are target users clearly defined with needs, pain points, and context? Are there specific user segments?
+> Feedback as if from a Staff PM at Google, Meta, or Booking.com
 
-### 3. Scope Clarity
-Is the scope well-defined? Are there clear boundaries of what's in and out of scope? Are requirements unambiguous?
+Evaluates: Problem Clarity, Success Metrics, User Insight, Scope & Prioritization, Edge Cases & Risks. Zero tolerance for vague thinking, vanity metrics, or features built without evidence.
 
-### 4. Edge Cases
-Does the PRD address edge cases, error states, and boundary conditions? Are failure modes considered?
+### Engineering Lead Review
 
-### 5. Acceptance Criteria
-Are there clear, testable acceptance criteria for each feature or requirement? Could an engineer build from this?
+> Feedback as if from a senior engineer deciding whether to start building
 
-Each dimension receives a status:
-- **Pass** (7–10) — meets the bar
-- **Warning** (4–6) — needs improvement
-- **Fail** (0–3) — significant gaps
+Evaluates: Technical Feasibility, Ambiguity & Completeness, Edge Cases & Error States, Scope Creep Risk, Testability. Asks one question: can my team build this without constantly interrupting the PM?
 
-The overall score (0–100) is a weighted assessment across all five dimensions.
+### Executive Review
+
+> Feedback as if from a CPO or investor assessing strategic impact
+
+Evaluates: Strategic Alignment, Business Impact, Market & Competitive Context, Resource Justification, Success Definition. Doesn't care about execution detail — evaluates whether this deserves to be built at all.
+
+### PM Coach Review
+
+> Developmental feedback on your PM thinking and craft
+
+Evaluates: Problem Thinking, User Empathy, Metrics Thinking, Prioritization & Trade-off Thinking, Communication Clarity. Diagnoses thinking patterns and returns a **Growth Focus** — the #1 PM skill to develop, with a specific recommendation.
+
+## Output
+
+All personas return:
+- **Overall score** (0–100) with letter grade (A–F)
+- **Ship recommendation** — ship, revise, or reject with rationale
+- **5 dimension cards** — score, status (pass/warning/fail), issues, suggestions, and optional rewrite examples
+- **Markdown export** — full report formatted for pasting into docs, Slack, or PRs
+
+The PM Coach persona additionally returns a **Growth Focus** callout with skill diagnosis and development plan.
 
 ## Project Structure
 
@@ -118,11 +133,13 @@ src/
 │   └── page.tsx                 # Main UI (input + results)
 ├── components/
 │   ├── dimension-card.tsx       # Individual dimension result card
+│   ├── persona-selector.tsx     # 4-option persona card selector
 │   ├── score-badge.tsx          # Animated overall score ring + grade
 │   └── theme-toggle.tsx         # Dark / light mode toggle
 └── lib/
     ├── export.ts                # Markdown export utility
     ├── llm.ts                   # Multi-provider LLM abstraction
+    ├── personas.ts              # 4 persona system prompts + metadata
     └── utils.ts                 # Tailwind merge utility
 ```
 
@@ -131,9 +148,9 @@ src/
 Contributions are welcome! Here are some ways to help:
 
 1. **Report bugs** — open an issue describing the problem and steps to reproduce
-2. **Suggest dimensions** — have an idea for a new analysis dimension? Open an issue to discuss
+2. **Add personas** — new reviewer perspectives are easy to add in `src/lib/personas.ts`
 3. **Add providers** — the LLM abstraction in `src/lib/llm.ts` is designed to make adding new providers straightforward
-4. **Improve the prompt** — better prompts lead to better analysis; PRs welcome
+4. **Improve prompts** — better prompts lead to better analysis; PRs welcome
 5. **Fix issues** — check the issue tracker for open items
 
 ### Development

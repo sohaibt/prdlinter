@@ -104,9 +104,10 @@ async function analyzeWithAnthropic(prdText: string): Promise<AnalysisResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set in .env");
 
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250514";
   const client = new Anthropic({ apiKey });
   const message = await client.messages.create({
-    model: "claude-sonnet-4-5-20250514",
+    model,
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
     messages: [
@@ -128,9 +129,10 @@ async function analyzeWithOpenAI(prdText: string): Promise<AnalysisResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is not set in .env");
 
+  const model = process.env.OPENAI_MODEL || "gpt-4o";
   const client = new OpenAI({ apiKey });
   const response = await client.chat.completions.create({
-    model: "gpt-4o",
+    model,
     temperature: 0.2,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
@@ -147,8 +149,9 @@ async function analyzeWithGemini(prdText: string): Promise<AnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set in .env");
 
+  const modelName = process.env.GEMINI_MODEL || "gemini-1.5-pro";
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+  const model = genAI.getGenerativeModel({ model: modelName });
 
   const result = await model.generateContent({
     contents: [

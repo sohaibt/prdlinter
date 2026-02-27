@@ -16,7 +16,7 @@ Good PRDs ship better products. But reviewing a PRD for completeness is tedious 
 
 ## Features
 
-- **Multi-LLM support** — choose between Anthropic Claude, OpenAI GPT-4o, or Google Gemini
+- **Multi-LLM support** — choose between Anthropic, OpenAI, or Google Gemini with configurable models
 - **5-dimension analysis** — scored rubric covering the most common PRD gaps
 - **Actionable feedback** — specific issues and suggestions, not vague advice
 - **Markdown export** — copy the full report to paste into your workflow
@@ -51,11 +51,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 You only need a key for the provider(s) you want to use.
 
-| Provider | Model | Get a Key |
-|----------|-------|-----------|
-| Anthropic | claude-sonnet-4-5 | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
+| Provider | Default Model | Get a Key |
+|----------|---------------|-----------|
+| Anthropic | claude-sonnet-4-5-20250514 | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
 | OpenAI | gpt-4o | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Google | gemini-1.5-pro | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| Google Gemini | gemini-1.5-pro | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
 
 Add the key(s) to your `.env.local` file:
 
@@ -64,6 +64,18 @@ ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AI...
 ```
+
+### Custom models
+
+Each provider uses a sensible default model, but you can override it in `.env.local`:
+
+```
+ANTHROPIC_MODEL=claude-opus-4-20250514
+OPENAI_MODEL=gpt-4-turbo
+GEMINI_MODEL=gemini-2.0-flash
+```
+
+Use any model your API key has access to — the app passes it straight through to the provider SDK.
 
 ## The 5 Dimensions
 

@@ -6,7 +6,7 @@
 
 Runs 100% locally. Your documents never leave your machine. No backend, no database, no deployment. Clone it, add an API key, and go.
 
-![Screenshot placeholder]([screenshot.png](https://github.com/sohaibt/prdlinter/blob/main/PRD%20Linter%20Preview.png))
+![Screenshot placeholder]([https://github.com/sohaibt/prdlinter/blob/main/PRD%20Linter%20Preview.png]
 
 ---
 

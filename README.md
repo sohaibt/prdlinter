@@ -58,7 +58,22 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 You only need a key for the provider(s) you want to use.
 
+<<<<<<< claude/prd-linter-tool-KsVtE
+| Provider | Default Model | Free Tier | Get a Key |
+|----------|---------------|-----------|-----------|
+| **Groq** | llama-3.3-70b-versatile | Yes | [console.groq.com/keys](https://console.groq.com/keys) |
+| Anthropic | claude-sonnet-4-5-20250514 | No | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
+| OpenAI | gpt-4o | No | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Google Gemini | gemini-1.5-pro | No | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
 
+**Groq is the default** and works on the free tier with no credit card required — perfect for demos and trying the tool out. For production-quality analysis, use Anthropic, OpenAI, or Gemini.
+=======
+| Provider | Default Model | Get a Key |
+|----------|---------------|-----------|
+| Anthropic | Chose your favorite model | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
+| OpenAI | Chose your favorite model | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Google Gemini | Chose your favorite model | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+>>>>>>> main
 
 Add the key(s) to your `.env.local` file:
 

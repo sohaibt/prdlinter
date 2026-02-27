@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PERSONA_PROMPTS, type PersonaId } from "./personas";
 
-export type Provider = "anthropic" | "openai" | "gemini";
+export type Provider = "groq" | "anthropic" | "openai" | "gemini";
 
 export interface GrowthFocus {
   skill: string;
@@ -42,6 +42,8 @@ export async function analyzePRD(
   const systemPrompt = PERSONA_PROMPTS[persona];
 
   switch (provider) {
+    case "groq":
+      return analyzeWithGroq(prdText, systemPrompt);
     case "anthropic":
       return analyzeWithAnthropic(prdText, systemPrompt);
     case "openai":
@@ -51,6 +53,32 @@ export async function analyzePRD(
     default:
       throw new Error(`Unsupported provider: ${provider}`);
   }
+}
+
+async function analyzeWithGroq(
+  prdText: string,
+  systemPrompt: string
+): Promise<AnalysisResult> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY is not set in .env");
+
+  const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const client = new OpenAI({
+    apiKey,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
+  const response = await client.chat.completions.create({
+    model,
+    temperature: 0.2,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Analyze the following PRD:\n\n${prdText}` },
+    ],
+  });
+
+  const text = response.choices[0]?.message?.content;
+  if (!text) throw new Error("No response from Groq");
+  return parseJsonResponse(text);
 }
 
 async function analyzeWithAnthropic(

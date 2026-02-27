@@ -19,7 +19,8 @@ Good PRDs ship better products. But reviewing a PRD for completeness is tedious 
 
 - **4 reviewer personas** — Senior PM, Engineering Lead, Executive, and PM Coach, each with a distinct evaluation lens and tone
 - **Ship / Revise / Reject recommendation** — clear verdict with rationale, not just a score
-- **Multi-LLM support** — choose between Anthropic, OpenAI, or Google Gemini with configurable models
+- **Free demo mode** — ships with Groq (Llama 3.3 70B) as the default provider, free tier, no credit card needed
+- **Multi-LLM support** — choose between Groq, Anthropic, OpenAI, or Google Gemini with configurable models
 - **5-dimension analysis** — scored rubric tailored to each persona's perspective
 - **Rewrite examples** — reviewers show you what stronger writing looks like
 - **PM Coach growth focus** — diagnoses your #1 PM skill gap with a development plan
@@ -57,15 +58,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 You only need a key for the provider(s) you want to use.
 
-| Provider | Default Model | Get a Key |
-|----------|---------------|-----------|
-| Anthropic | Chose your favorite model | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
-| OpenAI | Chose your favorite model | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Google Gemini | Chose your favorite model | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+
 
 Add the key(s) to your `.env.local` file:
 
 ```
+GROQ_API_KEY=gsk_...
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AI...
@@ -76,6 +74,7 @@ GEMINI_API_KEY=AI...
 Each provider uses a sensible default model, but you can override it in `.env.local`:
 
 ```
+GROQ_MODEL=llama-3.1-8b-instant
 ANTHROPIC_MODEL=claude-opus-4-20250514
 OPENAI_MODEL=gpt-4-turbo
 GEMINI_MODEL=gemini-2.0-flash

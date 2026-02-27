@@ -18,7 +18,8 @@ Good PRDs ship better products. But reviewing a PRD for completeness is tedious 
 
 - **4 reviewer personas** — Senior PM, Engineering Lead, Executive, and PM Coach, each with a distinct evaluation lens and tone
 - **Ship / Revise / Reject recommendation** — clear verdict with rationale, not just a score
-- **Multi-LLM support** — choose between Anthropic, OpenAI, or Google Gemini with configurable models
+- **Free demo mode** — ships with Groq (Llama 3.3 70B) as the default provider, free tier, no credit card needed
+- **Multi-LLM support** — choose between Groq, Anthropic, OpenAI, or Google Gemini with configurable models
 - **5-dimension analysis** — scored rubric tailored to each persona's perspective
 - **Rewrite examples** — reviewers show you what stronger writing looks like
 - **PM Coach growth focus** — diagnoses your #1 PM skill gap with a development plan
@@ -56,15 +57,19 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 You only need a key for the provider(s) you want to use.
 
-| Provider | Default Model | Get a Key |
-|----------|---------------|-----------|
-| Anthropic | claude-sonnet-4-5-20250514 | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
-| OpenAI | gpt-4o | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Google Gemini | gemini-1.5-pro | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| Provider | Default Model | Free Tier | Get a Key |
+|----------|---------------|-----------|-----------|
+| **Groq** | llama-3.3-70b-versatile | Yes | [console.groq.com/keys](https://console.groq.com/keys) |
+| Anthropic | claude-sonnet-4-5-20250514 | No | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
+| OpenAI | gpt-4o | No | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Google Gemini | gemini-1.5-pro | No | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+
+**Groq is the default** and works on the free tier with no credit card required — perfect for demos and trying the tool out. For production-quality analysis, use Anthropic, OpenAI, or Gemini.
 
 Add the key(s) to your `.env.local` file:
 
 ```
+GROQ_API_KEY=gsk_...
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AI...
@@ -75,6 +80,7 @@ GEMINI_API_KEY=AI...
 Each provider uses a sensible default model, but you can override it in `.env.local`:
 
 ```
+GROQ_MODEL=llama-3.1-8b-instant
 ANTHROPIC_MODEL=claude-opus-4-20250514
 OPENAI_MODEL=gpt-4-turbo
 GEMINI_MODEL=gemini-2.0-flash

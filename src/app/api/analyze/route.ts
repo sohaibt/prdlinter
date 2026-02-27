@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!["anthropic", "openai", "gemini"].includes(provider)) {
+    if (!["groq", "anthropic", "openai", "gemini"].includes(provider)) {
       return NextResponse.json(
         { error: "Invalid provider. Must be one of: anthropic, openai, gemini" },
         { status: 400 }

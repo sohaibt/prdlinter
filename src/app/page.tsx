@@ -37,7 +37,7 @@ const shipConfig = {
 
 export default function Home() {
   const [prdText, setPrdText] = useState("");
-  const [provider, setProvider] = useState<Provider>("anthropic");
+  const [provider, setProvider] = useState<Provider>("groq");
   const [persona, setPersona] = useState<PersonaId>("senior-pm");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -284,6 +284,7 @@ export default function Home() {
                     className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
                     disabled={loading}
                   >
+                    <option value="groq">Groq (Free)</option>
                     <option value="anthropic">Anthropic</option>
                     <option value="openai">OpenAI</option>
                     <option value="gemini">Google Gemini</option>
@@ -291,6 +292,31 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* Free tier disclaimer */}
+            {provider === "groq" && (
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs leading-relaxed text-amber-400/90">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="mt-0.5 flex-shrink-0"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span>
+                  <strong>Demo mode:</strong> Using Groq&apos;s free Llama 3.3 70B model.
+                  Results are good for a preview but not as thorough as Claude, GPT-4o,
+                  or Gemini Pro. For production-quality analysis, add your own API key
+                  and select a premium provider above.
+                </span>
+              </div>
+            )}
 
             {/* Analyze button */}
             <button

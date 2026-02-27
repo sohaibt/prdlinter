@@ -53,9 +53,9 @@ You only need a key for the provider(s) you want to use.
 
 | Provider | Default Model | Get a Key |
 |----------|---------------|-----------|
-| Anthropic | claude-sonnet-4-5-20250514 | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
-| OpenAI | gpt-4o | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Google Gemini | gemini-1.5-pro | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| Anthropic | Chose your favorite model | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
+| OpenAI | Chose your favorite model | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Google Gemini | Chose your favorite model | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
 
 Add the key(s) to your `.env.local` file:
 

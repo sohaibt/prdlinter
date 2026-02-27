@@ -5,16 +5,31 @@ export function exportAsMarkdown(result: AnalysisResult): string {
 
   lines.push("# PRD Linter Report");
   lines.push("");
+  if (result.persona) {
+    lines.push(`**Reviewer:** ${result.persona}`);
+  }
   lines.push(`**Overall Score:** ${result.overall_score}/100`);
   lines.push(`**Verdict:** ${result.overall_verdict}`);
+  if (result.ship_recommendation) {
+    const badge =
+      result.ship_recommendation === "ship"
+        ? "SHIP"
+        : result.ship_recommendation === "revise"
+          ? "REVISE"
+          : "REJECT";
+    lines.push(`**Recommendation:** ${badge}`);
+    if (result.ship_rationale) {
+      lines.push(`**Rationale:** ${result.ship_rationale}`);
+    }
+  }
   lines.push("");
   lines.push("---");
   lines.push("");
 
   for (const dim of result.dimensions) {
     const statusEmoji =
-      dim.status === "pass" ? "✅" : dim.status === "warning" ? "⚠️" : "❌";
-    lines.push(`## ${statusEmoji} ${dim.name} — ${dim.score}/10 (${dim.status})`);
+      dim.status === "pass" ? "\u2705" : dim.status === "warning" ? "\u26A0\uFE0F" : "\u274C";
+    lines.push(`## ${statusEmoji} ${dim.name} \u2014 ${dim.score}/10 (${dim.status})`);
     lines.push("");
 
     if (dim.issues.length > 0) {
@@ -33,11 +48,31 @@ export function exportAsMarkdown(result: AnalysisResult): string {
       lines.push("");
     }
 
-    if (dim.issues.length === 0 && dim.suggestions.length === 0) {
+    if (dim.rewrite_example) {
+      lines.push("### Rewrite Example");
+      lines.push("");
+      lines.push(`> ${dim.rewrite_example}`);
+      lines.push("");
+    }
+
+    if (dim.issues.length === 0 && dim.suggestions.length === 0 && !dim.rewrite_example) {
       lines.push("No issues found.");
       lines.push("");
     }
 
+    lines.push("---");
+    lines.push("");
+  }
+
+  if (result.growth_focus) {
+    lines.push("## \u{1F3AF} Growth Focus");
+    lines.push("");
+    lines.push(`**Skill to develop:** ${result.growth_focus.skill}`);
+    lines.push("");
+    lines.push(`**Diagnosis:** ${result.growth_focus.diagnosis}`);
+    lines.push("");
+    lines.push(`**Recommendation:** ${result.growth_focus.recommendation}`);
+    lines.push("");
     lines.push("---");
     lines.push("");
   }

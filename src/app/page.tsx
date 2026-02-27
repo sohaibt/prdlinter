@@ -1,16 +1,44 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { cn } from "@/lib/utils";
 import { ScoreBadge } from "@/components/score-badge";
 import { DimensionCard } from "@/components/dimension-card";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { PersonaSelector } from "@/components/persona-selector";
 import { exportAsMarkdown } from "@/lib/export";
 import type { AnalysisResult } from "@/lib/llm";
 import type { Provider } from "@/lib/llm";
+import type { PersonaId } from "@/lib/personas";
+
+const shipConfig = {
+  ship: {
+    label: "Ship It",
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-500",
+    border: "border-emerald-500/20",
+    icon: "M5 13l4 4L19 7",
+  },
+  revise: {
+    label: "Revise",
+    bg: "bg-amber-500/10",
+    text: "text-amber-500",
+    border: "border-amber-500/20",
+    icon: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
+  },
+  reject: {
+    label: "Reject",
+    bg: "bg-red-500/10",
+    text: "text-red-500",
+    border: "border-red-500/20",
+    icon: "M18 6L6 18M6 6l12 12",
+  },
+};
 
 export default function Home() {
   const [prdText, setPrdText] = useState("");
   const [provider, setProvider] = useState<Provider>("anthropic");
+  const [persona, setPersona] = useState<PersonaId>("senior-pm");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -37,7 +65,7 @@ export default function Home() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: prdText, provider }),
+        body: JSON.stringify({ text: prdText, provider, persona }),
       });
 
       const data = await res.json();
@@ -96,6 +124,7 @@ export default function Home() {
         fileInputRef.current.value = "";
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -157,6 +186,19 @@ export default function Home() {
         <div className="grid gap-6 lg:grid-cols-[1fr,1fr]">
           {/* Input Panel */}
           <div className="flex flex-col gap-4">
+            {/* Persona selector */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                Reviewer Persona
+              </p>
+              <PersonaSelector
+                value={persona}
+                onChange={setPersona}
+                disabled={loading}
+              />
+            </div>
+
+            {/* PRD input */}
             <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <label
@@ -175,7 +217,7 @@ export default function Home() {
                 value={prdText}
                 onChange={(e) => setPrdText(e.target.value)}
                 placeholder="Paste your Product Requirements Document here..."
-                className="h-72 w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--background)] px-3.5 py-3 text-sm leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                className="h-56 w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--background)] px-3.5 py-3 text-sm leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
                 disabled={loading}
               />
 
@@ -314,6 +356,7 @@ export default function Home() {
                   <div className="flex flex-col items-center gap-4">
                     <div className="skeleton h-36 w-36 rounded-full" />
                     <div className="skeleton h-4 w-48 rounded-md" />
+                    <div className="skeleton h-8 w-24 rounded-lg" />
                   </div>
                 </div>
                 {[...Array(3)].map((_, i) => (
@@ -365,18 +408,133 @@ export default function Home() {
 
             {!loading && result && (
               <div className="animate-fade-in flex flex-col gap-4">
-                {/* Overall score */}
+                {/* Overall score + ship recommendation */}
                 <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 text-center shadow-sm">
                   <ScoreBadge score={result.overall_score} />
-                  <p className="mt-4 text-sm leading-relaxed text-[var(--muted-foreground)]">
+
+                  {/* Ship recommendation badge */}
+                  {result.ship_recommendation && (
+                    <div className="mt-4 flex justify-center">
+                      {(() => {
+                        const cfg = shipConfig[result.ship_recommendation];
+                        return (
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider",
+                              cfg.bg,
+                              cfg.text,
+                              cfg.border
+                            )}
+                          >
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d={cfg.icon} />
+                            </svg>
+                            {cfg.label}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted-foreground)]">
                     {result.overall_verdict}
                   </p>
+
+                  {result.ship_rationale && (
+                    <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                      {result.ship_rationale}
+                    </p>
+                  )}
+
+                  {result.persona && (
+                    <p className="mt-3 text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+                      Reviewed as: {result.persona}
+                    </p>
+                  )}
                 </div>
 
                 {/* Dimension cards */}
                 {result.dimensions.map((dim, i) => (
                   <DimensionCard key={dim.name} dimension={dim} index={i} />
                 ))}
+
+                {/* Growth Focus callout (PM Coach only) */}
+                {result.growth_focus && (
+                  <div
+                    className="animate-slide-up overflow-hidden rounded-xl border border-[var(--primary)]/20 bg-gradient-to-br from-[var(--primary)]/5 to-[var(--primary)]/10"
+                    style={{
+                      animationDelay: `${result.dimensions.length * 100}ms`,
+                      animationFillMode: "both",
+                    }}
+                  >
+                    <div className="p-5">
+                      <div className="mb-3 flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--primary)]/15">
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-[var(--primary)]"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                            <line x1="9" y1="9" x2="9.01" y2="9" />
+                            <line x1="15" y1="9" x2="15.01" y2="9" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-[var(--primary)]">
+                            Growth Focus
+                          </h3>
+                          <p className="text-[11px] text-[var(--muted-foreground)]">
+                            Your #1 PM skill to develop
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--primary)]">
+                            Skill
+                          </p>
+                          <p className="text-sm font-semibold text-[var(--card-foreground)]">
+                            {result.growth_focus.skill}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--primary)]">
+                            Diagnosis
+                          </p>
+                          <p className="text-sm leading-relaxed text-[var(--card-foreground)]">
+                            {result.growth_focus.diagnosis}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--primary)]">
+                            How to Develop It
+                          </p>
+                          <p className="text-sm leading-relaxed text-[var(--card-foreground)]">
+                            {result.growth_focus.recommendation}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Action buttons */}
                 <div className="flex gap-3">

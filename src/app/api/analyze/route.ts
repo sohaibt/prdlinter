@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzePRD, type Provider } from "@/lib/llm";
+import { PERSONA_PROMPTS, type PersonaId } from "@/lib/personas";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, provider } = body as { text: string; provider: Provider };
+    const { text, provider, persona } = body as {
+      text: string;
+      provider: Provider;
+      persona?: PersonaId;
+    };
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return NextResponse.json(
@@ -20,7 +25,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await analyzePRD(text.trim(), provider);
+    const selectedPersona: PersonaId = persona && persona in PERSONA_PROMPTS
+      ? persona
+      : "senior-pm";
+
+    const result = await analyzePRD(text.trim(), provider, selectedPersona);
     return NextResponse.json(result);
   } catch (error) {
     const message =

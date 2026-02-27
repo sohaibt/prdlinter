@@ -2,49 +2,115 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light theme */
 :root {
-  --background: #fafafa;
-  --foreground: #0a0a0a;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --card-foreground: #0f172a;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-foreground: #ffffff;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
   --destructive: #ef4444;
-  --ring: #18181b;
+  --ring: #6366f1;
+  --surface: #ffffff;
+  --surface-hover: #f8fafc;
+  --glow: rgba(99, 102, 241, 0.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #fafafa;
-    --muted: #27272a;
-    --muted-foreground: #a1a1aa;
-    --border: #27272a;
-    --card: #0a0a0a;
-    --card-foreground: #fafafa;
-    --primary: #fafafa;
-    --primary-foreground: #18181b;
-    --accent: #27272a;
-    --accent-foreground: #fafafa;
-    --destructive: #ef4444;
-    --ring: #d4d4d8;
-  }
+/* Dark theme */
+.dark {
+  --background: #0b0f1a;
+  --foreground: #e2e8f0;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #1e293b;
+  --card: #111827;
+  --card-foreground: #e2e8f0;
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
+  --primary-foreground: #0f172a;
+  --accent: #1e293b;
+  --accent-foreground: #e2e8f0;
+  --destructive: #f87171;
+  --ring: #818cf8;
+  --surface: #111827;
+  --surface-hover: #1e293b;
+  --glow: rgba(129, 140, 248, 0.06);
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    sans-serif;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 @layer base {
   * {
     border-color: var(--border);
   }
+}
+
+/* Score ring animation */
+.score-ring {
+  transition: stroke-dashoffset 1s ease-out;
+}
+
+/* Toast animation */
+@keyframes toast-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 0.25s ease-out;
+}
+
+.toast-exit {
+  animation: toast-out 0.2s ease-in forwards;
+}
+
+/* Skeleton pulse */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--surface-hover) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }

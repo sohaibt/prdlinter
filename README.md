@@ -18,8 +18,10 @@ Good PRDs ship better products. But reviewing a PRD for completeness is tedious 
 
 - **Multi-LLM support** — choose between Anthropic, OpenAI, or Google Gemini with configurable models
 - **5-dimension analysis** — scored rubric covering the most common PRD gaps
+- **PDF, Markdown & text upload** — paste text or upload .txt, .md, and .pdf files
 - **Actionable feedback** — specific issues and suggestions, not vague advice
-- **Markdown export** — copy the full report to paste into your workflow
+- **Markdown export** — copy the full report to clipboard as formatted Markdown
+- **Dark / light mode** — dark by default, toggle in the header
 - **Privacy-first** — all processing happens locally via API calls you control
 - **Zero infrastructure** — no database, no auth, no deployment needed
 
@@ -108,18 +110,20 @@ The overall score (0–100) is a weighted assessment across all five dimensions.
 ```
 src/
 ├── app/
-│   ├── api/analyze/
-│   │   └── route.ts        # POST endpoint for PRD analysis
-│   ├── globals.css          # Global styles and CSS variables
-│   ├── layout.tsx           # Root layout
-│   └── page.tsx             # Main UI (input + results)
+│   ├── api/
+│   │   ├── analyze/route.ts     # POST endpoint for PRD analysis
+│   │   └── parse-pdf/route.ts   # POST endpoint for PDF text extraction
+│   ├── globals.css              # Global styles, themes, animations
+│   ├── layout.tsx               # Root layout + theme init script
+│   └── page.tsx                 # Main UI (input + results)
 ├── components/
-│   ├── dimension-card.tsx   # Individual dimension result card
-│   └── score-badge.tsx      # Overall score ring + grade
+│   ├── dimension-card.tsx       # Individual dimension result card
+│   ├── score-badge.tsx          # Animated overall score ring + grade
+│   └── theme-toggle.tsx         # Dark / light mode toggle
 └── lib/
-    ├── export.ts            # Markdown export utility
-    ├── llm.ts               # Multi-provider LLM abstraction
-    └── utils.ts             # Tailwind merge utility
+    ├── export.ts                # Markdown export utility
+    ├── llm.ts                   # Multi-provider LLM abstraction
+    └── utils.ts                 # Tailwind merge utility
 ```
 
 ## Contributing

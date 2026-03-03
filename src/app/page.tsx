@@ -128,11 +128,35 @@ export default function Home() {
     []
   );
 
-  function handleCopyMarkdown() {
+  async function handleCopyMarkdown() {
     if (!result) return;
     const md = exportAsMarkdown(result);
-    navigator.clipboard.writeText(md);
-    showToast("Report copied to clipboard");
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(md);
+        showToast("Report copied to clipboard");
+        return;
+      }
+
+      // Fallback for environments where Clipboard API is unavailable.
+      const textarea = document.createElement("textarea");
+      textarea.value = md;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      const copied = document.execCommand("copy");
+      document.body.removeChild(textarea);
+
+      if (!copied) {
+        throw new Error("Clipboard copy command failed");
+      }
+      showToast("Report copied to clipboard");
+    } catch {
+      showToast("Clipboard access is unavailable in this browser/context");
+    }
   }
 
   function handleReset() {

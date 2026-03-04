@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PDFParse } from "pdf-parse";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -16,7 +18,8 @@ export async function POST(request: NextRequest) {
     await parser.destroy();
 
     return NextResponse.json({ text: result.text });
-  } catch {
+  } catch (error) {
+    console.error("PDF parse error:", error);
     return NextResponse.json(
       { error: "Failed to parse PDF. Make sure the file is a valid PDF." },
       { status: 500 }

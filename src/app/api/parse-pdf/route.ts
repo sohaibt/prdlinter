@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PDFParse } from "pdf-parse";
 
 export const runtime = "nodejs";
 
@@ -13,15 +12,32 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = await file.arrayBuffer();
-    const parser = new PDFParse({ data: new Uint8Array(buffer) });
-    const result = await parser.getText();
-    await parser.destroy();
+    const uint8 = new Uint8Array(buffer);
 
-    return NextResponse.json({ text: result.text });
+    // Dynamically import pdfjs-dist to avoid bundling issues
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+
+    const doc = await pdfjsLib.getDocument({ data: uint8 }).promise;
+    const pages: string[] = [];
+
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      const strings = content.items
+        .filter((item: unknown) => typeof (item as { str?: string }).str === "string")
+        .map((item: unknown) => (item as { str: string }).str);
+      pages.push(strings.join(" "));
+    }
+
+    const text = pages.join("\n\n");
+
+    return NextResponse.json({ text });
   } catch (error) {
-    console.error("PDF parse error:", error);
+    const message =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("PDF parse error:", message, error);
     return NextResponse.json(
-      { error: "Failed to parse PDF. Make sure the file is a valid PDF." },
+      { error: `Failed to parse PDF: ${message}` },
       { status: 500 }
     );
   }

@@ -14,17 +14,29 @@ export async function POST(request: NextRequest) {
     const buffer = await file.arrayBuffer();
     const uint8 = new Uint8Array(buffer);
 
-    // Dynamically import pdfjs-dist to avoid bundling issues
+    // Pre-load the worker into globalThis so pdfjs-dist uses it inline
+    // instead of trying to dynamically import a worker file (which fails in
+    // serverless / bundled environments like Netlify).
+    // @ts-expect-error -- no type declarations for the worker bundle
+    const workerModule = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+    (globalThis as Record<string, unknown>).pdfjsWorker = workerModule;
+
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
-    const doc = await pdfjsLib.getDocument({ data: uint8 }).promise;
+    const doc = await pdfjsLib.getDocument({
+      data: uint8,
+      useSystemFonts: true,
+    }).promise;
     const pages: string[] = [];
 
     for (let i = 1; i <= doc.numPages; i++) {
       const page = await doc.getPage(i);
       const content = await page.getTextContent();
       const strings = content.items
-        .filter((item: unknown) => typeof (item as { str?: string }).str === "string")
+        .filter(
+          (item: unknown) =>
+            typeof (item as { str?: string }).str === "string"
+        )
         .map((item: unknown) => (item as { str: string }).str);
       pages.push(strings.join(" "));
     }

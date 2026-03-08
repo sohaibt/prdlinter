@@ -20,6 +20,9 @@ Good PRDs ship better products. But reviewing a PRD for completeness is tedious 
 - **4 reviewer personas** — Senior PM, Engineering Lead, Executive, and PM Coach, each with a distinct evaluation lens and tone
 - **Ship / Revise / Reject recommendation** — clear verdict with rationale, not just a score
 - **Inline annotations** — section-by-section feedback highlighting specific passages in your PRD, like a code review for product writing
+- **History & progress tracking** — automatically saves up to 50 past analyses in your browser, grouped by date, so you can track improvement over time
+- **Shareable report links** — generate a single URL that contains the entire compressed report; share it with teammates without any server or database
+- **PRD templates** — 6 starter templates (New Feature, Platform Migration, API Spec, Growth Experiment, Bug Fix, Mobile Feature) to kickstart your writing
 - **Free demo mode** — ships with Groq (Llama 3.3 70B) as the default provider, free tier, no credit card needed
 - **Multi-LLM support** — choose between Groq, Anthropic, OpenAI, or Google Gemini with configurable models
 - **5-dimension analysis** — scored rubric tailored to each persona's perspective
@@ -126,6 +129,7 @@ All personas return:
 - **5 dimension cards** — score, status (pass/warning/fail), issues, suggestions, and optional rewrite examples
 - **Inline annotations** — 5–15 highlighted passages in your PRD with targeted, severity-tagged feedback (critical / warning / suggestion)
 - **Markdown export** — full report formatted for pasting into docs, Slack, or PRs
+- **Shareable link** — a single URL encoding the full compressed report
 
 The PM Coach persona additionally returns a **Growth Focus** callout with skill diagnosis and development plan.
 
@@ -141,6 +145,29 @@ Click any highlight to see the feedback popover. Use the filter bar to focus on 
 
 > **Note:** Inline annotations work best with more capable models (Claude, GPT-4o, Gemini Pro). The Groq free-tier model may not reliably return annotations.
 
+### History & Progress Tracking
+
+Every analysis is automatically saved to your browser's local storage (up to 50 entries). Click the **History** button in the header to open the sidebar, where past analyses are grouped by date (Today, Yesterday, This Week, Older). Click any entry to reload the full report; delete individual entries or clear all history from the sidebar. No account or server needed — everything stays in your browser.
+
+### Shareable Report Links
+
+After analysis, click the **Share Link** button to generate a URL that contains the entire report. The analysis result is compressed using the browser's native `CompressionStream` API and encoded into a base64url query parameter. Anyone with the link can view the full report — no login, no server, no expiration. Recipients see a "Viewing a shared report" banner.
+
+### Templates
+
+Click the **Templates** button in the header to browse 6 PRD starter templates:
+
+| Template | Use case |
+|----------|----------|
+| **New Feature PRD** | Standard feature requests with problem, goals, user stories, scope, and risks |
+| **Platform Migration PRD** | Infrastructure changes with migration strategy, rollback plans, and phased rollout |
+| **API Specification PRD** | API design with endpoints, schemas, authentication, and rate limits |
+| **Growth Experiment PRD** | A/B tests with hypothesis, variants, metrics, and statistical analysis plans |
+| **Bug Fix / Incident PRD** | Critical bugs with root cause analysis, fix approach, and prevention measures |
+| **Mobile Feature PRD** | Mobile app features with platform-specific considerations, offline behavior, and device constraints |
+
+Preview any template before loading it into the editor. Each template includes placeholder sections that guide you toward a complete, reviewable PRD.
+
 ## Project Structure
 
 ```
@@ -155,13 +182,18 @@ src/
 ├── components/
 │   ├── annotated-prd.tsx        # Inline annotation viewer with highlights
 │   ├── dimension-card.tsx       # Individual dimension result card
+│   ├── history-sidebar.tsx      # History sidebar with date-grouped entries
 │   ├── persona-selector.tsx     # 4-option persona card selector
 │   ├── score-badge.tsx          # Animated overall score ring + grade
+│   ├── template-library.tsx     # Template browser modal with preview
 │   └── theme-toggle.tsx         # Dark / light mode toggle
 └── lib/
     ├── export.ts                # Markdown export utility
+    ├── history.ts               # localStorage-based history (save/load/delete)
     ├── llm.ts                   # Multi-provider LLM abstraction + types
     ├── personas.ts              # 4 persona system prompts + annotation instructions
+    ├── share.ts                 # Compress/decompress shareable report URLs
+    ├── templates.ts             # 6 PRD starter templates
     └── utils.ts                 # Tailwind merge utility
 ```
 

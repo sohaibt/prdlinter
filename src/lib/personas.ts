@@ -179,9 +179,33 @@ Return only valid JSON in this exact structure — no text outside the JSON:
   }
 }`;
 
+// Shared instruction appended to every persona prompt
+const ANNOTATIONS_INSTRUCTION = `
+
+IMPORTANT — Inline Annotations:
+In addition to the dimensions above, you MUST also return an "annotations" array. Each annotation highlights a specific passage in the PRD with targeted feedback — like a code review, but for product writing. This is the most actionable part of your review.
+
+Rules for annotations:
+- "quote" must be an EXACT substring copied from the PRD text (5-80 characters). Do not paraphrase.
+- Include 5-15 annotations covering the most important issues across all dimensions.
+- Spread annotations across different sections of the PRD — do not cluster them all in one area.
+- Each annotation must have a severity: "critical" (blocks shipping), "warning" (should fix), or "suggestion" (nice to improve).
+- "dimension" should match one of the dimension names from your analysis.
+- "comment" should be concise (1-2 sentences) and actionable.
+
+Add this to the JSON output:
+  "annotations": [
+    {
+      "quote": "<exact substring from PRD>",
+      "comment": "<concise feedback>",
+      "severity": "critical" | "warning" | "suggestion",
+      "dimension": "<dimension name this relates to>"
+    }
+  ]`;
+
 export const PERSONA_PROMPTS: Record<PersonaId, string> = {
-  "senior-pm": SENIOR_PM_PROMPT,
-  "engineering-lead": ENGINEERING_LEAD_PROMPT,
-  "executive": EXECUTIVE_PROMPT,
-  "pm-coach": PM_COACH_PROMPT,
+  "senior-pm": SENIOR_PM_PROMPT + ANNOTATIONS_INSTRUCTION,
+  "engineering-lead": ENGINEERING_LEAD_PROMPT + ANNOTATIONS_INSTRUCTION,
+  "executive": EXECUTIVE_PROMPT + ANNOTATIONS_INSTRUCTION,
+  "pm-coach": PM_COACH_PROMPT + ANNOTATIONS_INSTRUCTION,
 };

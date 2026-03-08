@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import type { InlineAnnotation } from "@/lib/llm";
 
@@ -16,54 +16,115 @@ interface TextSegment {
 
 const severityConfig = {
   critical: {
-    bg: "bg-red-500/15",
-    border: "border-red-500/40",
+    bg: "bg-red-500/20",
+    hoverBg: "hover:bg-red-500/30",
+    border: "border-red-500/50",
     text: "text-red-400",
     label: "Critical",
     dot: "bg-red-500",
   },
   warning: {
-    bg: "bg-amber-500/15",
-    border: "border-amber-500/40",
+    bg: "bg-amber-500/20",
+    hoverBg: "hover:bg-amber-500/30",
+    border: "border-amber-500/50",
     text: "text-amber-400",
     label: "Warning",
     dot: "bg-amber-500",
   },
   suggestion: {
-    bg: "bg-blue-500/15",
-    border: "border-blue-500/40",
+    bg: "bg-blue-500/20",
+    hoverBg: "hover:bg-blue-500/30",
+    border: "border-blue-500/50",
     text: "text-blue-400",
     label: "Suggestion",
     dot: "bg-blue-500",
   },
 };
 
+/** Normalize whitespace so "foo  bar" matches "foo bar", etc. */
+function normalize(s: string): string {
+  return s.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Find `needle` in `haystack` with fuzzy whitespace + case-insensitive matching.
+ * Returns { start, end } indices in the *original* haystack, or null.
+ */
+function fuzzyIndexOf(
+  haystack: string,
+  needle: string
+): { start: number; end: number } | null {
+  // 1. Try exact match first (fastest path)
+  const exactIdx = haystack.indexOf(needle);
+  if (exactIdx !== -1) {
+    return { start: exactIdx, end: exactIdx + needle.length };
+  }
+
+  // 2. Try case-insensitive exact match
+  const lowerIdx = haystack.toLowerCase().indexOf(needle.toLowerCase());
+  if (lowerIdx !== -1) {
+    return { start: lowerIdx, end: lowerIdx + needle.length };
+  }
+
+  // 3. Normalized whitespace + case-insensitive match
+  // Build a map from normalized-string index → original-string index
+  const normNeedle = normalize(needle);
+  if (normNeedle.length < 3) return null;
+
+  // Walk through the haystack, building a normalized version with index mapping
+  const normChars: string[] = [];
+  const origIndices: number[] = []; // normChars[i] came from haystack[origIndices[i]]
+  let prevWasSpace = false;
+
+  for (let i = 0; i < haystack.length; i++) {
+    const ch = haystack[i];
+    if (/\s/.test(ch)) {
+      if (!prevWasSpace && normChars.length > 0) {
+        normChars.push(" ");
+        origIndices.push(i);
+      }
+      prevWasSpace = true;
+    } else {
+      normChars.push(ch.toLowerCase());
+      origIndices.push(i);
+      prevWasSpace = false;
+    }
+  }
+
+  const normHaystack = normChars.join("");
+  const matchIdx = normHaystack.indexOf(normNeedle);
+  if (matchIdx === -1) return null;
+
+  const origStart = origIndices[matchIdx];
+  // End index: find the original index of the last matched char, then +1
+  const lastNormIdx = matchIdx + normNeedle.length - 1;
+  const origEnd =
+    lastNormIdx < origIndices.length
+      ? origIndices[lastNormIdx] + 1
+      : haystack.length;
+
+  return { start: origStart, end: origEnd };
+}
+
 function buildSegments(
   text: string,
   annotations: InlineAnnotation[]
 ): TextSegment[] {
-  // Find all match positions, avoiding overlaps
   const matches: { start: number; end: number; annotation: InlineAnnotation }[] = [];
 
   for (const ann of annotations) {
     if (!ann.quote || ann.quote.length < 3) continue;
-    const idx = text.indexOf(ann.quote);
-    if (idx === -1) continue;
-
-    // Check for overlap with existing matches
-    const end = idx + ann.quote.length;
-    const overlaps = matches.some(
-      (m) => idx < m.end && end > m.start
-    );
+    const result = fuzzyIndexOf(text, ann.quote);
+    if (!result) continue;
+    const { start, end } = result;
+    const overlaps = matches.some((m) => start < m.end && end > m.start);
     if (!overlaps) {
-      matches.push({ start: idx, end, annotation: ann });
+      matches.push({ start, end, annotation: ann });
     }
   }
 
-  // Sort by position
   matches.sort((a, b) => a.start - b.start);
 
-  // Build segments
   const segments: TextSegment[] = [];
   let cursor = 0;
 
@@ -85,9 +146,64 @@ function buildSegments(
   return segments;
 }
 
+function AnnotationPopover({
+  annotation,
+  onClose,
+}: {
+  annotation: InlineAnnotation;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const cfg = severityConfig[annotation.severity] || severityConfig.suggestion;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={ref}
+      className="absolute left-0 right-0 z-50 mt-1"
+      style={{ top: "100%" }}
+    >
+      <div
+        className={cn(
+          "rounded-lg border p-3 shadow-xl",
+          "bg-[var(--card)] border-[var(--border)]"
+        )}
+      >
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <span className={cn("h-2 w-2 rounded-full flex-shrink-0", cfg.dot)} />
+          <span
+            className={cn(
+              "text-[10px] font-bold uppercase tracking-wider",
+              cfg.text
+            )}
+          >
+            {cfg.label}
+          </span>
+          <span className="text-[10px] text-[var(--muted-foreground)]">
+            — {annotation.dimension}
+          </span>
+        </div>
+        <p className="font-sans text-xs leading-relaxed text-[var(--card-foreground)]">
+          {annotation.comment}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function AnnotatedPrd({ prdText, annotations }: AnnotatedPrdProps) {
-  const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
+  const [activeQuote, setActiveQuote] = useState<string | null>(null);
   const [filterSeverity, setFilterSeverity] = useState<string | null>(null);
+  const highlightRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const filteredAnnotations = useMemo(
     () =>
@@ -110,11 +226,30 @@ export function AnnotatedPrd({ prdText, annotations }: AnnotatedPrdProps) {
     return c;
   }, [annotations]);
 
+  const handleHighlightClick = useCallback((quote: string) => {
+    setActiveQuote((prev) => (prev === quote ? null : quote));
+  }, []);
+
+  const handleClosePopover = useCallback(() => {
+    setActiveQuote(null);
+  }, []);
+
+  const scrollToHighlight = useCallback((quote: string) => {
+    setActiveQuote(quote);
+    const el = highlightRefs.current.get(quote);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
   if (annotations.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)]/50 p-8 text-center">
         <p className="text-sm text-[var(--muted-foreground)]">
           No inline annotations available for this analysis.
+        </p>
+        <p className="mt-1 text-xs text-[var(--muted-foreground)]/70">
+          Try using a more capable model (Claude, GPT-4o) for richer feedback.
         </p>
       </div>
     );
@@ -170,55 +305,47 @@ export function AnnotatedPrd({ prdText, annotations }: AnnotatedPrdProps) {
 
             const ann = seg.annotation;
             const cfg = severityConfig[ann.severity] || severityConfig.suggestion;
-            const isActive = activeAnnotation === ann.quote;
+            const isActive = activeQuote === ann.quote;
 
             return (
-              <span key={i} className="relative inline">
-                <span
+              <span
+                key={i}
+                className="relative inline-block"
+                style={{ verticalAlign: "baseline" }}
+                ref={(el) => {
+                  if (el) highlightRefs.current.set(ann.quote, el);
+                }}
+              >
+                <mark
+                  role="button"
+                  tabIndex={0}
                   className={cn(
-                    "cursor-pointer rounded-sm border-b-2 transition-all",
+                    "cursor-pointer rounded-sm border-b-2 px-0.5 text-inherit transition-all",
+                    "not-italic no-underline",
                     cfg.bg,
+                    cfg.hoverBg,
                     cfg.border,
-                    isActive && "ring-2 ring-[var(--primary)]/30"
+                    isActive && "ring-2 ring-[var(--primary)]/40"
                   )}
-                  onClick={() =>
-                    setActiveAnnotation(isActive ? null : ann.quote)
-                  }
+                  style={{ backgroundColor: undefined }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleHighlightClick(ann.quote);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleHighlightClick(ann.quote);
+                    }
+                  }}
                 >
                   {seg.text}
-                </span>
+                </mark>
                 {isActive && (
-                  <span className="relative z-10 mt-1 block">
-                    <span
-                      className={cn(
-                        "block rounded-lg border p-3 text-xs shadow-lg",
-                        "bg-[var(--card)] border-[var(--border)]"
-                      )}
-                    >
-                      <span className="mb-1 flex items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "h-2 w-2 rounded-full flex-shrink-0",
-                            cfg.dot
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            "text-[10px] font-bold uppercase tracking-wider",
-                            cfg.text
-                          )}
-                        >
-                          {cfg.label}
-                        </span>
-                        <span className="text-[10px] text-[var(--muted-foreground)]">
-                          — {ann.dimension}
-                        </span>
-                      </span>
-                      <span className="mt-1.5 block font-sans text-xs leading-relaxed text-[var(--card-foreground)]">
-                        {ann.comment}
-                      </span>
-                    </span>
-                  </span>
+                  <AnnotationPopover
+                    annotation={ann}
+                    onClose={handleClosePopover}
+                  />
                 )}
               </span>
             );
@@ -234,17 +361,14 @@ export function AnnotatedPrd({ prdText, annotations }: AnnotatedPrdProps) {
         <div className="space-y-2">
           {filteredAnnotations.map((ann, i) => {
             const cfg = severityConfig[ann.severity] || severityConfig.suggestion;
+            const isActive = activeQuote === ann.quote;
             return (
               <button
                 key={i}
-                onClick={() =>
-                  setActiveAnnotation(
-                    activeAnnotation === ann.quote ? null : ann.quote
-                  )
-                }
+                onClick={() => scrollToHighlight(ann.quote)}
                 className={cn(
                   "w-full rounded-lg border p-3 text-left transition-all",
-                  activeAnnotation === ann.quote
+                  isActive
                     ? "border-[var(--primary)]/30 bg-[var(--primary)]/5"
                     : "border-[var(--border)] hover:border-[var(--muted-foreground)]/30"
                 )}

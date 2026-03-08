@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ScoreBadge } from "@/components/score-badge";
+import { AnnotatedPrd } from "@/components/annotated-prd";
 import { DimensionCard } from "@/components/dimension-card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PersonaSelector } from "@/components/persona-selector";
@@ -54,6 +55,7 @@ export default function Home() {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isSharedView, setIsSharedView] = useState(false);
+  const [resultTab, setResultTab] = useState<"score" | "inline">("score");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -96,6 +98,7 @@ export default function Home() {
     setError(null);
     setResult(null);
     setIsSharedView(false);
+    setResultTab("score");
 
     try {
       const res = await fetch("/api/analyze", {
@@ -612,6 +615,58 @@ export default function Home() {
 
             {!loading && result && (
               <div className="animate-fade-in flex flex-col gap-4">
+                {/* Tab switcher */}
+                <div className="flex rounded-xl border border-[var(--border)] bg-[var(--card)] p-1 shadow-sm">
+                  <button
+                    onClick={() => setResultTab("score")}
+                    className={cn(
+                      "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all",
+                      resultTab === "score"
+                        ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm"
+                        : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    )}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 20V10M12 20V4M6 20v-6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Score Overview
+                  </button>
+                  <button
+                    onClick={() => setResultTab("inline")}
+                    className={cn(
+                      "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all",
+                      resultTab === "inline"
+                        ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm"
+                        : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    )}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Inline Review
+                    {result.annotations && result.annotations.length > 0 && (
+                      <span className={cn(
+                        "flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                        resultTab === "inline"
+                          ? "bg-[var(--primary-foreground)]/20 text-[var(--primary-foreground)]"
+                          : "bg-[var(--primary)]/10 text-[var(--primary)]"
+                      )}>
+                        {result.annotations.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Inline Review tab */}
+                {resultTab === "inline" && (
+                  <AnnotatedPrd
+                    prdText={prdText}
+                    annotations={result.annotations || []}
+                  />
+                )}
+
+                {/* Score Overview tab */}
+                {resultTab === "score" && <>
                 {/* Overall score + ship recommendation */}
                 <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 text-center shadow-sm">
                   <ScoreBadge score={result.overall_score} />
@@ -739,6 +794,8 @@ export default function Home() {
                     </div>
                   </div>
                 )}
+
+                </>}
 
                 {/* Action buttons */}
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">

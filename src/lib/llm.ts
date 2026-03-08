@@ -11,6 +11,17 @@ export interface GrowthFocus {
   recommendation: string;
 }
 
+export interface InlineAnnotation {
+  /** Exact quote from the PRD text (used to locate the annotation) */
+  quote: string;
+  /** The feedback message */
+  comment: string;
+  /** Severity level */
+  severity: "critical" | "warning" | "suggestion";
+  /** Which dimension this relates to */
+  dimension: string;
+}
+
 export interface AnalysisResult {
   persona?: string;
   overall_score: number;
@@ -26,6 +37,7 @@ export interface AnalysisResult {
     rewrite_example?: string;
   }[];
   growth_focus?: GrowthFocus;
+  annotations?: InlineAnnotation[];
 }
 
 function parseJsonResponse(text: string): AnalysisResult {

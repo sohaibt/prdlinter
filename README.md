@@ -19,6 +19,7 @@ Good PRDs ship better products. But reviewing a PRD for completeness is tedious 
 
 - **4 reviewer personas** — Senior PM, Engineering Lead, Executive, and PM Coach, each with a distinct evaluation lens and tone
 - **Ship / Revise / Reject recommendation** — clear verdict with rationale, not just a score
+- **Inline annotations** — section-by-section feedback highlighting specific passages in your PRD, like a code review for product writing
 - **Free demo mode** — ships with Groq (Llama 3.3 70B) as the default provider, free tier, no credit card needed
 - **Multi-LLM support** — choose between Groq, Anthropic, OpenAI, or Google Gemini with configurable models
 - **5-dimension analysis** — scored rubric tailored to each persona's perspective
@@ -58,7 +59,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 You only need a key for the provider(s) you want to use.
 
-<<<<<<< claude/prd-linter-tool-KsVtE
 | Provider | Default Model | Free Tier | Get a Key |
 |----------|---------------|-----------|-----------|
 | **Groq** | llama-3.3-70b-versatile | Yes | [console.groq.com/keys](https://console.groq.com/keys) |
@@ -66,14 +66,7 @@ You only need a key for the provider(s) you want to use.
 | OpenAI | gpt-4o | No | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | Google Gemini | gemini-1.5-pro | No | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
 
-**Groq is the default** and works on the free tier with no credit card required — perfect for demos and trying the tool out. For production-quality analysis, use Anthropic, OpenAI, or Gemini.
-=======
-| Provider | Default Model | Get a Key |
-|----------|---------------|-----------|
-| Anthropic | Chose your favorite model | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
-| OpenAI | Chose your favorite model | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Google Gemini | Chose your favorite model | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
->>>>>>> main
+**Groq is the default** and works on the free tier with no credit card required — perfect for demos and trying the tool out. For production-quality analysis (including inline annotations), use Anthropic, OpenAI, or Gemini.
 
 Add the key(s) to your `.env.local` file:
 
@@ -131,9 +124,22 @@ All personas return:
 - **Overall score** (0–100) with letter grade (A–F)
 - **Ship recommendation** — ship, revise, or reject with rationale
 - **5 dimension cards** — score, status (pass/warning/fail), issues, suggestions, and optional rewrite examples
+- **Inline annotations** — 5–15 highlighted passages in your PRD with targeted, severity-tagged feedback (critical / warning / suggestion)
 - **Markdown export** — full report formatted for pasting into docs, Slack, or PRs
 
 The PM Coach persona additionally returns a **Growth Focus** callout with skill diagnosis and development plan.
+
+### Inline Review
+
+After analysis, switch to the **Inline Review** tab to see your PRD text with color-coded highlights:
+
+- **Red** — critical issues that block shipping
+- **Amber** — warnings that should be fixed
+- **Blue** — suggestions for improvement
+
+Click any highlight to see the feedback popover. Use the filter bar to focus on a specific severity. The annotation summary list at the bottom lets you jump to any highlight in the document.
+
+> **Note:** Inline annotations work best with more capable models (Claude, GPT-4o, Gemini Pro). The Groq free-tier model may not reliably return annotations.
 
 ## Project Structure
 
@@ -145,16 +151,17 @@ src/
 │   │   └── parse-pdf/route.ts   # POST endpoint for PDF text extraction
 │   ├── globals.css              # Global styles, themes, animations
 │   ├── layout.tsx               # Root layout + theme init script
-│   └── page.tsx                 # Main UI (input + results)
+│   └── page.tsx                 # Main UI (input + results + inline review)
 ├── components/
+│   ├── annotated-prd.tsx        # Inline annotation viewer with highlights
 │   ├── dimension-card.tsx       # Individual dimension result card
 │   ├── persona-selector.tsx     # 4-option persona card selector
 │   ├── score-badge.tsx          # Animated overall score ring + grade
 │   └── theme-toggle.tsx         # Dark / light mode toggle
 └── lib/
     ├── export.ts                # Markdown export utility
-    ├── llm.ts                   # Multi-provider LLM abstraction
-    ├── personas.ts              # 4 persona system prompts + metadata
+    ├── llm.ts                   # Multi-provider LLM abstraction + types
+    ├── personas.ts              # 4 persona system prompts + annotation instructions
     └── utils.ts                 # Tailwind merge utility
 ```
 

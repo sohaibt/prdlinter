@@ -41,6 +41,71 @@ const severityConfig = {
   },
 };
 
+/** Normalize whitespace so "foo  bar" matches "foo bar", etc. */
+function normalize(s: string): string {
+  return s.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Find `needle` in `haystack` with fuzzy whitespace + case-insensitive matching.
+ * Returns { start, end } indices in the *original* haystack, or null.
+ */
+function fuzzyIndexOf(
+  haystack: string,
+  needle: string
+): { start: number; end: number } | null {
+  // 1. Try exact match first (fastest path)
+  const exactIdx = haystack.indexOf(needle);
+  if (exactIdx !== -1) {
+    return { start: exactIdx, end: exactIdx + needle.length };
+  }
+
+  // 2. Try case-insensitive exact match
+  const lowerIdx = haystack.toLowerCase().indexOf(needle.toLowerCase());
+  if (lowerIdx !== -1) {
+    return { start: lowerIdx, end: lowerIdx + needle.length };
+  }
+
+  // 3. Normalized whitespace + case-insensitive match
+  // Build a map from normalized-string index → original-string index
+  const normNeedle = normalize(needle);
+  if (normNeedle.length < 3) return null;
+
+  // Walk through the haystack, building a normalized version with index mapping
+  const normChars: string[] = [];
+  const origIndices: number[] = []; // normChars[i] came from haystack[origIndices[i]]
+  let prevWasSpace = false;
+
+  for (let i = 0; i < haystack.length; i++) {
+    const ch = haystack[i];
+    if (/\s/.test(ch)) {
+      if (!prevWasSpace && normChars.length > 0) {
+        normChars.push(" ");
+        origIndices.push(i);
+      }
+      prevWasSpace = true;
+    } else {
+      normChars.push(ch.toLowerCase());
+      origIndices.push(i);
+      prevWasSpace = false;
+    }
+  }
+
+  const normHaystack = normChars.join("");
+  const matchIdx = normHaystack.indexOf(normNeedle);
+  if (matchIdx === -1) return null;
+
+  const origStart = origIndices[matchIdx];
+  // End index: find the original index of the last matched char, then +1
+  const lastNormIdx = matchIdx + normNeedle.length - 1;
+  const origEnd =
+    lastNormIdx < origIndices.length
+      ? origIndices[lastNormIdx] + 1
+      : haystack.length;
+
+  return { start: origStart, end: origEnd };
+}
+
 function buildSegments(
   text: string,
   annotations: InlineAnnotation[]
@@ -49,12 +114,12 @@ function buildSegments(
 
   for (const ann of annotations) {
     if (!ann.quote || ann.quote.length < 3) continue;
-    const idx = text.indexOf(ann.quote);
-    if (idx === -1) continue;
-    const end = idx + ann.quote.length;
-    const overlaps = matches.some((m) => idx < m.end && end > m.start);
+    const result = fuzzyIndexOf(text, ann.quote);
+    if (!result) continue;
+    const { start, end } = result;
+    const overlaps = matches.some((m) => start < m.end && end > m.start);
     if (!overlaps) {
-      matches.push({ start: idx, end, annotation: ann });
+      matches.push({ start, end, annotation: ann });
     }
   }
 

@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ScoreBadge } from "@/components/score-badge";
 import { DimensionCard } from "@/components/dimension-card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PersonaSelector } from "@/components/persona-selector";
-import { exportAsMarkdown } from "@/lib/export";
+import { HistorySidebar } from "@/components/history-sidebar";
+import { exportAsMarkdown, downloadHtmlReport } from "@/lib/export";
+import { getHistory, saveToHistory } from "@/lib/history";
+import { generateShareUrl, decodeResult } from "@/lib/share";
 import type { AnalysisResult } from "@/lib/llm";
 import type { Provider } from "@/lib/llm";
 import type { PersonaId } from "@/lib/personas";
+import type { HistoryEntry } from "@/lib/history";
 
 const shipConfig = {
   ship: {
@@ -44,10 +48,38 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [isSharedView, setIsSharedView] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const charCount = prdText.length;
+
+  // Load history and check for shared result on mount
+  useEffect(() => {
+    setHistory(getHistory());
+
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("r");
+    if (encoded) {
+      setIsSharedView(true);
+      decodeResult(encoded)
+        .then((decoded) => {
+          setResult(decoded);
+          // Clean URL without reloading
+          window.history.replaceState({}, "", window.location.pathname);
+        })
+        .catch(() => {
+          setError("Failed to load shared report. The link may be invalid.");
+          window.history.replaceState({}, "", window.location.pathname);
+        });
+    }
+  }, []);
+
+  function refreshHistory() {
+    setHistory(getHistory());
+  }
 
   function showToast(msg: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -60,6 +92,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setIsSharedView(false);
 
     try {
       const res = await fetch("/api/analyze", {
@@ -75,7 +108,12 @@ export default function Home() {
         return;
       }
 
-      setResult(data as AnalysisResult);
+      const analysisResult = data as AnalysisResult;
+      setResult(analysisResult);
+
+      // Save to history
+      saveToHistory(prdText, analysisResult, persona, provider);
+      refreshHistory();
     } catch {
       setError("Failed to connect to the analysis API. Is the server running?");
     } finally {
@@ -128,6 +166,13 @@ export default function Home() {
     []
   );
 
+  function handleSelectHistory(entry: HistoryEntry) {
+    setResult(entry.result);
+    setPrdText(entry.preview);
+    setIsSharedView(false);
+    setError(null);
+  }
+
   function handleCopyMarkdown() {
     if (!result) return;
     const md = exportAsMarkdown(result);
@@ -135,11 +180,29 @@ export default function Home() {
     showToast("Report copied to clipboard");
   }
 
+  async function handleShareLink() {
+    if (!result) return;
+    try {
+      const url = await generateShareUrl(result);
+      await navigator.clipboard.writeText(url);
+      showToast("Share link copied to clipboard");
+    } catch {
+      setError("Failed to generate share link.");
+    }
+  }
+
+  function handleDownloadReport() {
+    if (!result) return;
+    downloadHtmlReport(result);
+    showToast("Report downloaded");
+  }
+
   function handleReset() {
     setPrdText("");
     setResult(null);
     setError(null);
     setFileName(null);
+    setIsSharedView(false);
   }
 
   return (
@@ -188,8 +251,56 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            {/* History button */}
+            <button
+              onClick={() => setHistoryOpen(true)}
+              className="relative flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
+              aria-label="View history"
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span className="hidden text-xs font-medium sm:inline">History</span>
+              {history.length > 0 && (
+                <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--primary)] px-1 text-[10px] font-bold text-[var(--primary-foreground)]">
+                  {history.length}
+                </span>
+              )}
+            </button>
+            <ThemeToggle />
+          </div>
         </header>
+
+        {/* Shared view banner */}
+        {isSharedView && result && (
+          <div className="mb-6 flex items-center gap-3 rounded-xl border border-[var(--primary)]/20 bg-[var(--primary)]/5 px-4 py-3 text-sm text-[var(--primary)]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+            <span className="font-medium">Viewing a shared report.</span>
+            <button
+              onClick={handleReset}
+              className="ml-auto text-xs font-semibold underline underline-offset-2 hover:no-underline"
+            >
+              Start your own analysis
+            </button>
+          </div>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-[1fr,1fr]">
           {/* Input Panel */}
@@ -571,47 +682,50 @@ export default function Home() {
                 )}
 
                 {/* Action buttons */}
-                <div className="flex gap-3">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                   <button
                     onClick={handleCopyMarkdown}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--surface-hover)]"
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-xs font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--surface-hover)]"
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect
-                        x="9"
-                        y="9"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        ry="2"
-                      />
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                       <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                     </svg>
-                    Copy as Markdown
+                    Copy MD
+                  </button>
+                  <button
+                    onClick={handleShareLink}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-xs font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--surface-hover)]"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                    Share Link
+                  </button>
+                  <button
+                    onClick={handleDownloadReport}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-xs font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--surface-hover)]"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download
                   </button>
                   <button
                     onClick={handleReset}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--surface-hover)]"
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-xs font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--surface-hover)]"
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polyline points="1 4 1 10 7 10" />
                       <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
                     </svg>
-                    Analyze Another
+                    New Analysis
                   </button>
                 </div>
               </div>
@@ -665,6 +779,15 @@ export default function Home() {
           </div>
         </footer>
       </div>
+
+      {/* History Sidebar */}
+      <HistorySidebar
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        history={history}
+        onSelect={handleSelectHistory}
+        onHistoryChange={refreshHistory}
+      />
 
       {/* Toast */}
       {toast && (
